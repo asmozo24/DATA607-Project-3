@@ -1,0 +1,173 @@
+---
+title: 'Project 3: The first part'
+author: "Cassie Boylan, DH Kim, Alexis Mekueko"
+date: "10/9/2020"
+output:
+  slidy_presentation: default
+  beamer_presentation: default
+header-includes:
+- \usepackage{tikz}
+- \usetikzlibrary{positioning,shapes.multipart,shapes}
+---
+
+
+```{r setup, include=FALSE}
+
+def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  ifelse(options$size != "normalsize", paste0("\n \\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
+})
+
+
+```
+
+### Data Source and Loading
+Packages used:
+
+```{r load-packages, message=FALSE}
+
+
+library(readxl)
+library(httr)
+
+#loading some library we might need for this assignment
+library(tidyverse) 
+#library(openintro)
+#head(fastfood)
+library(readxl)
+library(readr)
+library(plyr)
+library(dplyr)
+#library(dice)
+# #library(VennDiagram)
+# #library(help = "dice")
+library(DBI)
+library(dbplyr)
+library(data.table)
+library(rstudioapi)
+#rstudioapi::isAvailable()
+library(RJDBC)
+library(odbc)
+library(RSQLite)
+
+
+```
+
+## Connecting to project db for importing the files needed 
+
+### Connecting to SQL server
+--this connection works but requires password, I am going to comment this block because preventing the knit process.
+ --Now we succeeded in reading Arrival_Delays_02_airlines full table into R dataframe.....
+
+ 
+```{r connection to sql}
+
+
+ 
+ #sql connection = con
+ 
+  con <- dbConnect(odbc(), # establishing the connectioon to SQL server to access db
+                   Driver = "SQL Server", # server type
+                   Server = "ATM\\ATMSERVER", #server name
+                   Database = "Data607_Airline_Delays_Db", # this is one of the db I want to import
+                   UID = "Alex", 
+                   PWD = rstudioapi::askForPassword("Database password"), # password required
+                   Port = 1433)  # port connection
+ 
+  dbListFields(con, "Arrival_Delays_02_airlines")  # loading the db into R for manipulation and analysis
+  airlines_arrival <- dbReadTable(con, "Arrival_Delays_02_airlines") 
+  airlines_arrival 
+  
+
+```
+
+
+E-Commerce Data:
+```{r, size="tiny"}
+
+
+retailURL <- 
+    "http://archive.ics.uci.edu//ml//machine-learning-databases//00502//online_retail_II.xlsx"
+
+
+```
+
+Loading and Combining Data 
+```{r, size = "tiny", results = "hide"}
+
+GET(retailURL, write_disk(tempFileName <- tempfile(fileext = ".xlsx")))
+
+
+```
+
+
+
+```{r, size="tiny"}
+
+
+retail_sheet_2009 <- read_excel(tempFileName, sheet = "Year 2009-2010")
+retail_sheet_2010 <- read_excel(tempFileName, sheet = "Year 2010-2011")
+retaildf <- rbind(retail_sheet_2009, retail_sheet_2010)
+
+
+```
+
+
+### Description of Data
+```{r, size = "tiny"}
+
+retaildf
+
+
+```
+
+### E-R Diagram
+
+\tikzset{basic/.style={
+        draw,
+        rectangle split,
+        rectangle split parts=2,
+        rectangle split part fill={blue!20,white},
+        minimum width=2.5cm,
+        text width=2cm,
+        align=left,
+        font=\itshape
+    },
+    Diamond/.style={ diamond, 
+                        draw, 
+                        shape aspect=2, 
+                        inner sep = 2pt,
+                        text centered,
+                        fill=blue!10!white,
+                        font=\itshape
+                      }}
+\begin{tikzpicture}
+\node[basic] (product) 
+{product
+\nodepart{second}
+\underline{product\_id}\\
+product\_name};
+\node[basic,right=2cm of product] (invoice) 
+{invoice
+\nodepart{second}
+\underline{invoice\_id}\\
+customer\_id\\
+invoice\_date};
+\draw (product) -- (invoice) ;
+\node[basic,right=2cm of invoice] (invoiceitem) 
+{invoiceitem
+\nodepart{second}
+\underline{invoice\_id}\\
+\underline{product\_id}\\
+price\\
+quantity};
+\draw (invoice) -- (invoiceitem) ;
+\node[basic,below=1.5cm of invoice] (customer) 
+{customer
+\nodepart{second}
+\underline{customer\_id}\\
+	country};
+\draw (invoice) -- (customer) ;
+\end{tikzpicture}
+
