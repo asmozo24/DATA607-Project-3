@@ -28,7 +28,7 @@ Packages used:
 ```{r load-packages, message=FALSE}
 
 
-library(readxl)
+#library(readxl)
 library(httr)
 
 #loading some library we might need for this assignment
@@ -37,6 +37,7 @@ library(tidyverse)
 #head(fastfood)
 library(readxl)
 library(readr)
+library(xlsx)
 library(plyr)
 library(dplyr)
 #library(dice)
@@ -54,33 +55,6 @@ library(RSQLite)
 
 ```
 
-## Connecting to project db for importing the files needed 
-
-### Connecting to SQL server
---this connection works but requires password, I am going to comment this block because preventing the knit process.
- --Now we succeeded in reading Arrival_Delays_02_airlines full table into R dataframe.....
-
- 
-```{r connection to sql}
-
-
- 
- #sql connection = con
- 
-  con <- dbConnect(odbc(), # establishing the connectioon to SQL server to access db
-                   Driver = "SQL Server", # server type
-                   Server = "ATM\\ATMSERVER", #server name
-                   Database = "Data607_Airline_Delays_Db", # this is one of the db I want to import
-                   UID = "Alex", 
-                   PWD = rstudioapi::askForPassword("Database password"), # password required
-                   Port = 1433)  # port connection
- 
-  dbListFields(con, "Arrival_Delays_02_airlines")  # loading the db into R for manipulation and analysis
-  airlines_arrival <- dbReadTable(con, "Arrival_Delays_02_airlines") 
-  airlines_arrival 
-  
-
-```
 
 
 E-Commerce Data:
@@ -105,10 +79,39 @@ GET(retailURL, write_disk(tempFileName <- tempfile(fileext = ".xlsx")))
 
 ```{r, size="tiny"}
 
-
+# pretty cleaver here , did not know read cannot grab all sheet at once , and you made it pretty straight forward
 retail_sheet_2009 <- read_excel(tempFileName, sheet = "Year 2009-2010")
 retail_sheet_2010 <- read_excel(tempFileName, sheet = "Year 2010-2011")
 retaildf <- rbind(retail_sheet_2009, retail_sheet_2010)
+
+# I was trying to understand why you have to read the file twice and combined , and from my finding, the read only read one file
+# # renaming the original file causes ..Error: `path` does not exist: ‘C:\Users\PETITM~1\AppData\Local\Temp\Rtmp86D16t\fileed47561aa0.xlsx’
+# retaildf1 <- read_excel(tempFileName, sheet = "retail_sheets_2009-2011")
+# 
+# # So, this read 
+# retail_sheet <- read_excel(tempFileName)
+# view(retail_sheet)
+# 
+# #export xlsx to project working directory
+# write.xlsx(x = retail_sheet,                       # Write xlsx with manual sheet name
+#            file = "retail_sheet.xlsx",      
+#            sheetName = "Year 2009-2010")
+# xlsx(df, "../mydata.xlsx", sheetName = "Sheet1", col.names = TRUE, row.names = TRUE)
+
+#export the retaildf to project working directory, major problem exporting file
+#write.xlsx(retaildf, "~/R/Project3/DATA607-Project-3/retaildf.xlsx", sheetName = "Year 2009-2011", col.names = TRUE, row.names = TRUE)
+
+# I think it is possible to write to sql db but it is bit long, this does not work either, I think something wrong with the file
+ write.xlsx(x = retaildf,                       # Write xlsx with manual sheet name
+            file = "retaildf.xlsx",      
+            sheetName = "Year 2009-2010")
+
+ # this export works but I am having trouble opening the file , even the call from db does not get the file , either because too big or maybe my system need a refresh
+openxlsx::write.xlsx(x = retaildf, file = "retaildf.xlsx")
+getwd()
+
+setwd("~/R/Project3/DATA607-Project-3")
+
 
 
 ```
@@ -121,6 +124,37 @@ retaildf
 
 
 ```
+
+## Connecting to project db for importing the files needed 
+
+### Connecting to SQL server
+--this connection works but requires password, I am going to comment this block because preventing the knit process.
+ --Now we succeeded in reading Arrival_Delays_02_airlines full table into R dataframe.....
+
+ 
+```{r connection to sql}
+
+
+ 
+ #sql connection = con
+ 
+  con <- dbConnect(odbc(), # establishing the connectioon to SQL server to access db
+                   Driver = "SQL Server", # server type
+                   Server = "ATM\\ATMSERVER", #server name
+                   Database = "Data607_Project3_db", # this is one of the db I want to import
+                   UID = "Alex", 
+                   PWD = rstudioapi::askForPassword("Database password"), # password required
+                   Port = 1433)  # port connection
+ 
+  dbListFields(con, "retaildf")  # loading the db into R for manipulation and analysis
+  retaildf1 <- dbReadTable(con, "retaildf") 
+  retaildf1
+  
+  
+
+```
+
+
 
 ### E-R Diagram
 
